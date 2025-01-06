@@ -1,4 +1,24 @@
-venv/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+
+# Virtual Environment
+venv/
+
+# Database
+*.db
+
+# Logs
+*.log
+
+# Environment Variables
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# System Files
 .DS_Store
+Thumbs.db
