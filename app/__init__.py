@@ -18,8 +18,9 @@ def create_app():
         print("Database and tables created!")
 
     # Роуты
-    from .routes import main
+    from .routes import main, ads
     app.register_blueprint(main)
+    app.register_blueprint(ads)
 
     return app
 

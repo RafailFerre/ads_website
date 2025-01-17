@@ -7,6 +7,7 @@ from app.models import User, Ad
 from werkzeug.security import check_password_hash, generate_password_hash
 
 main = Blueprint('main', __name__)
+ads = Blueprint('ads', __name__)
 
 SECRET_KEY = "token_secret_key"  # Замените на свой секретный ключ
 
@@ -205,7 +206,7 @@ def delete_user(current_user, user_id):
 #     return jsonify({"message": "User deleted successfully!"}), 200
 
 # Создать объявление
-@main.route('/ad', methods=['POST'])
+@ads.route('/ads', methods=['POST'])
 @token_required
 def create_ad(current_user):
     data = request.get_json()
@@ -213,26 +214,54 @@ def create_ad(current_user):
     description = data.get('description')
     price = data.get('price')
 
-    new_ad = Ad(title=title, description=description, price=price, user_id=current_user.id)
+    if not title or not description or not price:
+        return jsonify({"error": "All fields are required!"}), 400
+
+    new_ad = Ad(title=title, description=description, price=price, user_id=current_user.id, author_username=current_user.username)
     db.session.add(new_ad)
     db.session.commit()
 
-    return jsonify({"message": "Ad created successfully!", "ad_id": new_ad.id}), 201
+    return jsonify({"message": "Ad created successfully!", "ad": {"id": new_ad.id, "title": new_ad.title, "author": new_ad.author_username}}), 201
+# commit 5
+# @main.route('/ad', methods=['POST'])
+# @token_required
+# def create_ad(current_user):
+#     data = request.get_json()
+#     title = data.get('title')
+#     description = data.get('description')
+#     price = data.get('price')
+
+#     new_ad = Ad(title=title, description=description, price=price, user_id=current_user.id)
+#     db.session.add(new_ad)
+#     db.session.commit()
+
+#     return jsonify({"message": "Ad created successfully!", "ad_id": new_ad.id}), 201
 
 # Получить все объявления
-@main.route('/ads', methods=['GET'])
+@ads.route('/ads', methods=['GET'])
 def get_ads():
     ads = Ad.query.all()
     return jsonify([{
-        "id": ad.id,
+        "ad_id": ad.id,
         "title": ad.title,
         "description": ad.description,
         "price": ad.price,
-        "user_id": ad.user_id
+        "user_id": ad.user_id,
+        "author": ad.author_username
     } for ad in ads]), 200
+    
+# Получить одно объявление
+@ads.route('/ads/<int:ad_id>', methods=['GET'])
+def get_ad(ad_id):
+    ad = Ad.query.get(ad_id)
+    if not ad:
+        return jsonify({"error": "Ad not found!"}), 404
+
+    ad_data = {"id": ad.id, "title": ad.title, "description": ad.description, "price": ad.price, "author": ad.author_username, "user_id": ad.user_id}
+    return jsonify(ad_data), 200
 
 # Редактировать объявление
-@main.route('/ad/<int:ad_id>', methods=['PUT'])
+@ads.route('/ads/<int:ad_id>', methods=['PUT'])
 @token_required
 def update_ad(current_user, ad_id):
     ad = Ad.query.get(ad_id)
@@ -251,7 +280,7 @@ def update_ad(current_user, ad_id):
     return jsonify({"message": "Ad updated successfully!"}), 200
 
 # Удалить объявление
-@main.route('/ad/<int:ad_id>', methods=['DELETE'])
+@ads.route('/ads/<int:ad_id>', methods=['DELETE'])
 @token_required
 def delete_ad(current_user, ad_id):
     ad = Ad.query.get(ad_id)

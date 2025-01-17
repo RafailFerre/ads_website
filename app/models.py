@@ -11,17 +11,26 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.username}>"
     
-    
 class Ad(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user = db.relationship('User', backref=db.backref('ads', lazy=True))
+    author_username = db.Column(db.String(80), nullable=False)
+    # Указание, что связь основана только на `user_id`
+    user = db.relationship('User', backref=db.backref('ads', lazy=True), foreign_keys=[user_id])    
+# commit 5
+# class Ad(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     title = db.Column(db.String(100), nullable=False)
+#     description = db.Column(db.Text, nullable=False)
+#     price = db.Column(db.Float, nullable=False)
+#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+#     user = db.relationship('User', backref=db.backref('ads', lazy=True))
 
-    def __repr__(self):
-        return f"<Ad {self.title}>"
+#     def __repr__(self):
+#         return f"<Ad {self.title}>"
 
 
 
