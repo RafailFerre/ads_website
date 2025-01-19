@@ -1,7 +1,7 @@
 import jwt
 from app.auth import token_required
 import datetime
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint, render_template, redirect, url_for, flash
 from app import db
 from app.models import User, Ad
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -24,41 +24,104 @@ def protected_route(current_user):
     return jsonify({"message": f"Hello, {current_user.username}!"}), 200                    
 
 
-@main.route('/register', methods=['POST'])
+@main.route('/register', methods=['GET', 'POST'])
 def register():
-    try:
-        # Получаем данные из запроса
-        data = request.get_json()
-        print(f"Received data: {data}")  # Лог
+    if request.method == 'POST':
+        # Проверяем, является ли это запросом API
+        if request.headers.get('Content-Type') == 'application/json' or request.is_json:
+            # Обработка API-запроса
+            try:
+                data = request.get_json()
+                username = data.get('username')
+                email = data.get('email')
+                password = data.get('password')
 
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
+                # Проверяем обязательные поля
+                if not username or not email or not password:
+                    return jsonify({"error": "All fields are required"}), 400
+                
+                #Check if the email is already registered
+                existing_user = User.query.filter_by(email=email).first()
+                if existing_user:
+                    return jsonify({"error": "Email already registered"}), 409
 
-        # Проверяем обязательные поля
-        if not username or not email or not password:
-            print("Error: Missing required fields")
-            return jsonify({"error": "Missing required fields"}), 400
+                # Хэшируем пароль
+                hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # Хэшируем пароль
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+                # Создаём нового пользователя
+                new_user = User(username=username, email=email, password=hashed_password)
+                db.session.add(new_user)
+                db.session.commit()
 
-        # Проверяем уникальность пользователя
-        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
-        if existing_user:
-            print("Error: User already exists")
-            return jsonify({"error": "User already exists"}), 409
+                return jsonify({"message": "Registration successful! Please log in"}), 201
+            except Exception as e:
+                print(f"Error during registration: {e}")
+                return jsonify({"error": "An error occurred during registration"}), 500
+        else:
+            # Обработка формы регистрации из браузера
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
 
-        # Добавляем нового пользователя
-        new_user = User(username=username, email=email, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        print(f"User {username} added to the database")
+            # Проверяем обязательные поля
+            if not username or not email or not password:
+                return render_template('register.html', error="All fields are required")
+            
+            # Check if the email is already registered
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                flash("Email already registered!", "error")
+                return render_template('register.html')
 
-        return jsonify({"message": "User registered successfully!"}), 201
-    except Exception as e:
-        print(f"Error during user registration: {e}")
-        return jsonify({"error": "An error occurred"}), 500
+            # Хэшируем пароль
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+
+            # Создаём нового пользователя
+            new_user = User(username=username, email=email, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+
+            return redirect(url_for('main.login'))  # Перенаправление на страницу входа
+
+    # GET-запрос — отобразить страницу регистрации
+    return render_template('register.html')
+
+# commit 6: before frontend
+# @main.route('/register', methods=['POST'])
+# def register():
+#     try:
+#         # Получаем данные из запроса
+#         data = request.get_json()
+#         print(f"Received data: {data}")  # Лог
+
+#         username = data.get('username')
+#         email = data.get('email')
+#         password = data.get('password')
+
+#         # Проверяем обязательные поля
+#         if not username or not email or not password:
+#             print("Error: Missing required fields")
+#             return jsonify({"error": "Missing required fields"}), 400
+
+#         # Хэшируем пароль
+#         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+
+#         # Проверяем уникальность пользователя
+#         existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+#         if existing_user:
+#             print("Error: User already exists")
+#             return jsonify({"error": "User already exists"}), 409
+
+#         # Добавляем нового пользователя
+#         new_user = User(username=username, email=email, password=hashed_password)
+#         db.session.add(new_user)
+#         db.session.commit()
+#         print(f"User {username} added to the database")
+
+#         return jsonify({"message": "User registered successfully!"}), 201
+#     except Exception as e:
+#         print(f"Error during user registration: {e}")
+#         return jsonify({"error": "An error occurred"}), 500
     
 
 # Авторизация пользователя
@@ -280,7 +343,7 @@ def update_ad(current_user, ad_id):
     return jsonify({"message": "Ad updated successfully!"}), 200
 
 # Удалить объявление
-@ads.route('/ads/<int:ad_id>', methods=['DELETE'])
+@ads.route('/ad/<int:ad_id>', methods=['DELETE'])
 @token_required
 def delete_ad(current_user, ad_id):
     ad = Ad.query.get(ad_id)
