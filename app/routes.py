@@ -213,7 +213,6 @@ def login():
 #         return jsonify({"error": "An error occurred"}), 500 
     
 
-
 @main.route('/profile', methods=['GET'])
 def profile_page():
     return render_template('profile.html')
@@ -221,21 +220,27 @@ def profile_page():
 @main.route('/api/profile', methods=['GET'])
 @token_required
 def profile_data(current_user):
-    # Получение объявлений пользователя
     ads = Ad.query.filter_by(user_id=current_user.id).all()
-    ads_list = [{"title": ad.title, "price": ad.price, "description": ad.description} for ad in ads]
-
-    return jsonify({
+    user_data = {
         "username": current_user.username,
         "email": current_user.email,
-        "ads": ads_list
-    })
-# @main.route('/profile', methods=['GET'])
-# @token_required  # Защита маршрута
-# def profile(current_user):
+        "avatar": current_user.avatar,  # Добавьте поле аватара в модель
+        "ads": [{"title": ad.title, "price": ad.price, "description": ad.description} for ad in ads]
+    }
+    return jsonify(user_data)
+# before upgrade profile
+# @main.route('/api/profile', methods=['GET'])
+# @token_required
+# def profile_data(current_user):
 #     # Получение объявлений пользователя
 #     ads = Ad.query.filter_by(user_id=current_user.id).all()
-#     return render_template('profile.html', user=current_user, ads=ads)    
+#     ads_list = [{"title": ad.title, "price": ad.price, "description": ad.description} for ad in ads]
+
+#     return jsonify({
+#         "username": current_user.username,
+#         "email": current_user.email,
+#         "ads": ads_list
+#     }) 
 
 # Получение информации о пользователе
 @main.route('/user/<int:user_id>', methods=['GET'])
