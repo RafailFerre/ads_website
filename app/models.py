@@ -2,14 +2,27 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+
+# from app import db
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(200), nullable=False)
-
+    avatar = db.Column(db.String(300), default="https://via.placeholder.com/120")  # Ссылка на аватар
+    
     def __repr__(self):
         return f"<User {self.username}>"
+# before upgrade profile without avatar
+# class User(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     username = db.Column(db.String(80), nullable=False, unique=True)
+#     email = db.Column(db.String(120), nullable=False, unique=True)
+#     password = db.Column(db.String(200), nullable=False)
+
+#     def __repr__(self):
+#         return f"<User {self.username}>"
     
 class Ad(db.Model):
     id = db.Column(db.Integer, primary_key=True)

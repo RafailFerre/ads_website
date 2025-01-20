@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .info-section, .ads-section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #007BFF;
+            text-transform: uppercase;
+        }
+        .info-block, .ads-block {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .ad-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .ad-item:last-child {
+            border-bottom: none;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-between;
+        }
+        .btn {
+            padding: 10px 15px;
+            text-align: center;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #007BFF;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <img id="avatar" src="" alt="User Avatar">
+            <h2 id="greeting">Hello, User!</h2>
+            <button class="btn btn-primary" onclick="uploadAvatar()">Upload Avatar</button>
+        </div>
+
+        <!-- User Info Section -->
+        <div class="info-section">
+            <div class="section-title">User Information</div>
+            <div class="info-block" id="userInfo">
+                <!-- User information dynamically loaded here -->
+            </div>
+        </div>
+
+        <!-- User Ads Section -->
+        <div class="ads-section">
+            <div class="section-title">Your Ads</div>
+            <div class="ads-block" id="adsList">
+                <!-- Ads dynamically loaded here -->
+            </div>
+            <button class="btn btn-primary" onclick="addAd()">Add New Ad</button>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="actions">
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("You must be logged in to access this page.");
+            window.location.href = "/login";
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch("/api/profile", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Populate user info
+                    const avatar = document.getElementById("avatar");
+                    const greeting = document.getElementById("greeting");
+                    const userInfo = document.getElementById("userInfo");
+
+                    avatar.src = data.avatar || "https://via.placeholder.com/120";
+                    greeting.textContent = `Hello, ${data.username}!`;
+                    userInfo.innerHTML = `
+                        <p><strong>Username:</strong> ${data.username}</p>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                    `;
+
+                    // Populate ads
+                    const adsList = document.getElementById("adsList");
+                    adsList.innerHTML = ""; // Clear previous ads
+                    data.ads.forEach((ad) => {
+                        const adItem = document.createElement("div");
+                        adItem.classList.add("ad-item");
+                        adItem.innerHTML = `
+                            <strong>${ad.title}</strong> - $${ad.price}
+                            <p>${ad.description}</p>
+                        `;
+                        adsList.appendChild(adItem);
+                    });
+                } else {
+                    const error = await response.json();
+                    alert(error.error || "Failed to load profile.");
+                    window.location.href = "/login";
+                }
+            } catch (error) {
+                console.error("Error loading profile:", error);
+                alert("An error occurred. Please try again.");
+                window.location.href = "/login";
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+        }
+
+        function addAd() {
+            alert("Feature to add new ads coming soon!");
+        }
+
+        function uploadAvatar() {
+            alert("Feature to upload avatar coming soon!");
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
+
+
+
+
