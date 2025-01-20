@@ -1,7 +1,7 @@
 import jwt
 from app.auth import token_required
 import datetime
-from flask import request, jsonify, Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, request, session, render_template, redirect, url_for, flash, jsonify
 from app import db
 from app.models import User, Ad
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -125,23 +125,70 @@ def register():
     
 
 # Авторизация пользователя
-@main.route('/login', methods=['POST'])
+@main.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    if request.method == 'POST':
+        # Определяем тип запроса: HTML-форма или API
+        if request.content_type == 'application/json':
+            # Обработка API-запроса
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
 
-    user = User.query.filter_by(email=email).first()
+            # Проверяем наличие пользователя
+            user = User.query.filter_by(email=email).first()
 
-    if user and check_password_hash(user.password, password):
-        token = jwt.encode(
-            {'user_id': user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
-            SECRET_KEY,
-            algorithm="HS256"
-        )
-        return jsonify({"message": f"Welcome back, {user.username}!", "token": token}), 200
+            if user and check_password_hash(user.password, password):
+                # Генерируем токен
+                token = jwt.encode(
+                    {
+                        "user_id": user.id,
+                        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Токен действует 1 час
+                    },
+                    SECRET_KEY,
+                    algorithm="HS256"
+                )
+                return jsonify({"message": "Login successful!", "token": token}), 200
+            else:
+                return jsonify({"error": "Invalid email or password"}), 401
+        else:
+            # Обработка HTML-формы
+            email = request.form.get('email')
+            password = request.form.get('password')
 
-    return jsonify({"error": "Invalid email or password"}), 401
+            # Проверяем наличие пользователя
+            user = User.query.filter_by(email=email).first()
+
+            if user and check_password_hash(user.password, password):
+                # Успешный вход через веб
+                session['user_id'] = user.id
+                session['email'] = user.email
+                return redirect(url_for('main.profile')) # return redirect(url_for('main.home'))
+            else:
+                # Ошибка входа через веб
+                error = "Invalid email or password"
+                return render_template('login.html', error=error)
+
+    # GET-запрос: возвращаем HTML-форму
+    return render_template('login.html')
+# commit 6: before frontend
+# @main.route('/login', methods=['POST'])
+# def login():
+#     data = request.get_json()
+#     email = data.get('email')
+#     password = data.get('password')
+
+#     user = User.query.filter_by(email=email).first()
+
+#     if user and check_password_hash(user.password, password):
+#         token = jwt.encode(
+#             {'user_id': user.id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
+#             SECRET_KEY,
+#             algorithm="HS256"
+#         )
+#         return jsonify({"message": f"Welcome back, {user.username}!", "token": token}), 200
+
+#     return jsonify({"error": "Invalid email or password"}), 401
 # commit 5:    
 # @main.route('/login', methods=['POST'])
 # def login():
@@ -165,7 +212,31 @@ def login():
 #         print(f"Error: {e}")
 #         return jsonify({"error": "An error occurred"}), 500 
     
-    
+
+
+@main.route('/profile', methods=['GET'])
+def profile_page():
+    return render_template('profile.html')
+
+@main.route('/api/profile', methods=['GET'])
+@token_required
+def profile_data(current_user):
+    # Получение объявлений пользователя
+    ads = Ad.query.filter_by(user_id=current_user.id).all()
+    ads_list = [{"title": ad.title, "price": ad.price, "description": ad.description} for ad in ads]
+
+    return jsonify({
+        "username": current_user.username,
+        "email": current_user.email,
+        "ads": ads_list
+    })
+# @main.route('/profile', methods=['GET'])
+# @token_required  # Защита маршрута
+# def profile(current_user):
+#     # Получение объявлений пользователя
+#     ads = Ad.query.filter_by(user_id=current_user.id).all()
+#     return render_template('profile.html', user=current_user, ads=ads)    
+
 # Получение информации о пользователе
 @main.route('/user/<int:user_id>', methods=['GET'])
 @token_required
