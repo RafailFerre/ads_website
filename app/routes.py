@@ -1,15 +1,50 @@
 import jwt
 from app.auth import token_required
 import datetime
-from flask import Blueprint, request, session, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, request, session, render_template, redirect, url_for, flash, jsonify, current_app
 from app import db
 from app.models import User, Ad
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
+import os
 
 main = Blueprint('main', __name__)
 ads = Blueprint('ads', __name__)
 
 SECRET_KEY = "token_secret_key"  # Замените на свой секретный ключ
+
+
+# Добавление маршрута для загрузки аватара
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@main.route('/upload_avatar', methods=['POST'])
+@token_required
+def upload_avatar(current_user):
+    if 'avatar' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        avatar_path = os.path.join(upload_folder, filename)
+        file.save(avatar_path)
+
+        # Сохранение пути к аватару в базе данных
+        current_user.avatar = f'static/uploads/{filename}'
+        db.session.commit()
+
+        return jsonify({"message": "Avatar uploaded successfully!"}), 200
+
+    return jsonify({"error": "File upload failed"}), 400
+
 
 @main.route('/', methods=['GET'])
 def home():
