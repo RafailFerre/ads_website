@@ -10,7 +10,7 @@ class User(db.Model):
     username = db.Column(db.String(80), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(200), nullable=False)
-    avatar = db.Column(db.String(300), default="https://via.placeholder.com/120")  # Ссылка на аватар
+    avatar = db.Column(db.String(300), default="static/default-avatar.png")  # Ссылка на аватар
     
     def __repr__(self):
         return f"<User {self.username}>"

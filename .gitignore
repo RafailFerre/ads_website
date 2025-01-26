@@ -22,3 +22,6 @@ venv/
 # System Files
 .DS_Store
 Thumbs.db
+
+# Upload Files
+app/static/uploads/
