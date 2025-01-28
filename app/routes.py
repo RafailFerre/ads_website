@@ -379,6 +379,7 @@ def delete_user(current_user, user_id):
 #     db.session.commit()
 #     return jsonify({"message": "User deleted successfully!"}), 200
 
+
 # Создать объявление
 @ads.route('/ads', methods=['POST'])
 @token_required
@@ -454,7 +455,7 @@ def update_ad(current_user, ad_id):
     return jsonify({"message": "Ad updated successfully!"}), 200
 
 # Удалить объявление
-@ads.route('/ad/<int:ad_id>', methods=['DELETE'])
+@ads.route('/ads/<int:ad_id>', methods=['DELETE'])
 @token_required
 def delete_ad(current_user, ad_id):
     ad = Ad.query.get(ad_id)
